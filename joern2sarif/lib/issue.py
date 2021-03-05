@@ -311,7 +311,7 @@ class Issue(object):
         if "tags" in data and isinstance(data["tags"], dict):
             self.tags = data["tags"]
         if "fingerprint" in data:
-            self.line_hash = fingerprint
+            self.line_hash = data["fingerprint"]
 
 
 def issue_from_dict(data):

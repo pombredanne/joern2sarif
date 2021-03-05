@@ -4,7 +4,6 @@ import json
 import os
 import pathlib
 import re
-import sys
 import uuid
 from urllib.parse import quote_plus
 
@@ -13,7 +12,6 @@ from jschema_to_python.to_json import to_json
 
 import joern2sarif.lib.config as config
 from joern2sarif.lib.issue import issue_from_dict
-from joern2sarif.lib.logger import LOG
 
 TS_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 
@@ -29,34 +27,6 @@ def convert_dataflow(working_dir, tool_args, dataflows):
     """
     if not dataflows:
         return None
-    file_name_prefix = ""
-    location_list = []
-    for flow in dataflows:
-        fn = flow["location"].get("fileName")
-        if not fn or fn == "N/A":
-            continue
-        if not is_generic_package(fn):
-            location = flow["location"]
-            fileName = location.get("fileName")
-            if not file_name_prefix:
-                file_name_prefix = find_path_prefix(working_dir, fileName)
-            location_list.append(
-                {
-                    "filename": os.path.join(file_name_prefix, fileName),
-                    "line_number": location.get("lineNumber"),
-                }
-            )
-    if len(location_list) >= 2:
-        first = location_list[0]
-        last = location_list[-1]
-        if (
-            first["filename"] == last["filename"]
-            and first["line_number"] == last["line_number"]
-        ):
-            location_list = [first]
-        else:
-            location_list = [first, last]
-    return location_list
 
 
 def extract_from_file(
@@ -94,7 +64,6 @@ def extract_from_file(
                     for kv in keyValuePairs:
                         if kv.get("_label") == "KEY_VALUE_PAIR":
                             kvdict[kv["key"]] = kv["value"]
-                    id = v.get("id")
                     evidence = v.get("evidence")
                     fingerprint = None
                     source = None
@@ -298,7 +267,6 @@ def report(
         ],
     )
     run = log.runs[0]
-    invocation = run.invocations[0]
     add_results(tool_name, issues, run, file_path_list, working_dir)
     serialized_log = to_json(log)
     if crep_fname:
@@ -347,7 +315,6 @@ def create_result(tool_name, issue, rules, rule_indices, file_path_list, working
         issue = issue_from_dict(issue)
 
     issue_dict = issue.as_dict()
-    rule_id = issue_dict.get("test_id")
     rule, rule_index = create_or_find_rule(tool_name, issue_dict, rules, rule_indices)
 
     # Substitute workspace prefix
@@ -526,10 +493,6 @@ def get_help(format, tool_name, rule_id, test_name, issue_dict):
     :param issue_dict:
     :return: Help text
     """
-    if rule_id and rule_id.upper().startswith("CWE"):
-        return get_description(rule_id, True)
-    if issue_dict.get("cwe_category"):
-        return get_description(issue_dict.get("cwe_category"), True)
     issue_text = issue_dict.get("issue_text", "")
     return issue_text
 
