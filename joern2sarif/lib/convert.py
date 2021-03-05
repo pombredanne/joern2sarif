@@ -16,17 +16,27 @@ from joern2sarif.lib.issue import issue_from_dict
 TS_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 
 
-def convert_dataflow(working_dir, tool_args, dataflows):
+def convert_dataflow(dataflows):
     """
     Convert dataflow into a simpler source and sink format for better representation in SARIF based viewers
 
-    :param working_dir: Work directory
-    :param tool_args: Tool args
     :param dataflows: List of dataflows from Inspect
     :return List of filename and location
     """
     if not dataflows:
         return None
+    loc_list = []
+    for flow in dataflows:
+        location = flow.get("location")
+        if not location.get("file_name") or not location.get("line_number"):
+            continue
+        loc_list.append(
+            {
+                "filename": location.get("file_name"),
+                "line_number": location.get("line_number"),
+            }
+        )
+    return loc_list
 
 
 def extract_from_file(
@@ -128,35 +138,58 @@ def extract_from_file(
                             if sink
                             else source.get("filename"),
                             "issue_confidence": "HIGH",
+                            "fingerprint": fingerprint,
                         }
                     )
             # NG SAST (Formerly Inspect) uses vulnerabilities
             elif tool_name == "ng-sast":
-                for v in report_data.get("vulnerabilities"):
+                for k, v in report_data.items():
                     if not v:
                         continue
-                    vuln = v["vulnerability"]
-                    location_list = []
-                    if vuln.get("dataFlow") and vuln.get("dataFlow", {}).get(
-                        "dataFlow"
-                    ):
-                        location_list = convert_dataflow(
-                            working_dir, tool_args, vuln["dataFlow"]["dataFlow"]["list"]
-                        )
-                    for location in location_list:
-                        issues.append(
-                            {
-                                "rule_id": vuln["category"],
-                                "title": vuln["title"],
-                                "description": vuln["description"],
-                                "score": vuln["score"],
-                                "severity": vuln["severity"],
-                                "line_number": location.get("line_number"),
-                                "filename": location.get("filename"),
-                                "first_found": vuln["firstVersionDetected"],
-                                "issue_confidence": "HIGH",
+                    for vuln in v:
+                        location = {}
+                        details = vuln.get("details", {})
+                        file_locations = details.get("file_locations", [])
+                        tags = vuln.get("tags", [])
+                        internal_id = vuln.get("internal_id")
+                        tmpA = internal_id.split("/")
+                        rule_id = tmpA[0]
+                        fingerprint = tmpA[-1]
+                        score = ""
+                        cvss_tag = [t for t in tags if t.get("key") == "cvss_score"]
+                        if cvss_tag:
+                            score = cvss_tag[0].get("value")
+                        if file_locations:
+                            last_loc = file_locations[-1]
+                            loc_arr = last_loc.split(":")
+                            location = {
+                                "filename": loc_arr[0],
+                                "line_number": loc_arr[1],
                             }
-                        )
+                        if not location and details.get("dataflow"):
+                            dataflows = details.get("dataflow").get("list")
+                            if dataflows:
+                                location_list = convert_dataflow(dataflows)
+                                # Take the sink
+                                if location_list:
+                                    location = location_list[-1]
+                        if location:
+                            issues.append(
+                                {
+                                    "rule_id": rule_id,
+                                    "title": vuln["category"],
+                                    "description": vuln["title"]
+                                    + "\n\n"
+                                    + vuln["description"],
+                                    "score": score,
+                                    "severity": vuln["severity"],
+                                    "line_number": location.get("line_number"),
+                                    "filename": location.get("filename"),
+                                    "first_found": vuln["version_first_seen"],
+                                    "issue_confidence": "HIGH",
+                                    "fingerprint": fingerprint,
+                                }
+                            )
     return issues
 
 
@@ -321,7 +354,6 @@ def create_result(tool_name, issue, rules, rule_indices, file_path_list, working
     # Override file path prefix with workspace
     filename = issue_dict["filename"]
     if working_dir:
-        # Issue 5 fix. Convert relative to full path automatically
         # Convert to full path only if the user wants
         if WORKSPACE_PREFIX is None and not filename.startswith(working_dir):
             filename = os.path.join(working_dir, filename)

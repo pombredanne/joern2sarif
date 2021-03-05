@@ -44,6 +44,30 @@ def test_joern_extract_issue():
         "line_number": 6,
         "filename": "vulnerabilities/sensitive.js",
         "issue_confidence": "HIGH",
+        "fingerprint": "0faab86059cec4d8e185382166a9f583",
+    }
+
+
+def test_ngsast_extract_issue():
+    issues = convertLib.extract_from_file(
+        "ng-sast",
+        [],
+        Path(__file__).parent,
+        Path(__file__).parent / "data" / "ngsast-report.json",
+    )
+    assert issues
+    assert len(issues) == 29
+    assert issues[0] == {
+        "rule_id": "command-injection-http",
+        "title": "Remote Code Execution",
+        "description": "Remote Code Execution: Command Injection through HTTP via `req` in `anonymous1`\n\nHTTP data is used in a shell command without undergoing escaping or validation. This could allow an attacker to execute code on the server. Injection flaws occur when untrusted data is sent to an interpreter as part of a command or query. By injecting hostile data, an attacker may trick the interpreter into executing unintended commands or accessing data without authorization which can result in data loss, corruption, or disclosure to unauthorized parties, loss of accountability, denial of access or even a complete host takeover.\n\n\n## Countermeasures\n\nThis vulnerability can be prevented by using parameterized queries or by validating HTTP data (preferably on server-side by means of common input sanitation libraries or whitelisting) before using it.\n\n## Additional information\n\n**[CWE-77](https://cwe.mitre.org/data/definitions/77.html)**\n\n**[CWE-78](https://cwe.mitre.org/data/definitions/78.html)**\n\n**[CWE-917](https://cwe.mitre.org/data/definitions/917.html)**\n\n**[OWASP-A1](https://owasp.org/www-project-top-ten/OWASP_Top_Ten_2017/Top_10-2017_A1-Injection)**",
+        "score": 9,
+        "severity": "critical",
+        "line_number": "19",
+        "filename": "vulnerabilities/exec.js",
+        "first_found": "1545c906d065bb4eb4c863be85d318e0b8cb509d",
+        "issue_confidence": "HIGH",
+        "fingerprint": "3fdf32776d26f1c3d469859fd6a46600",
     }
 
 
