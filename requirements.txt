@@ -1,5 +1,4 @@
 sarif-om
 jschema_to_python
-requests
 rich
 six
