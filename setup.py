@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="joern2sarif",
-    version="1.0.0",
+    version="1.0.1",
     author="Prabhu Subramanian",
     author_email="prabhu@shiftleft.io",
     description="Utility script to convert joern/ocular json output to sarif.",
@@ -23,7 +23,7 @@ setuptools.setup(
         "Topic :: Utilities",
         "Topic :: Security",
         "Programming Language :: Python :: 3.8",
-        "License :: OSI Approved :: Apache 2.0 License",
+        "License :: OSI Approved :: Apache Software License",
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.8",
