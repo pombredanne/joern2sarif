@@ -88,28 +88,6 @@ class Issue(object):
     def __hash__(self):
         return id(self)
 
-    def filter(self, severity, confidence):
-        """Utility to filter on confidence and severity
-
-        This function determines whether an issue should be included by
-        comparing the severity and confidence rating of the issue to minimum
-        thresholds specified in 'severity' and 'confidence' respectively.
-
-        Formatters should call manager.filter_results() directly.
-
-        This will return false if either the confidence or severity of the
-        issue are lower than the given threshold values.
-
-        :param severity: Severity threshold
-        :param confidence: Confidence threshold
-        :return: True/False depending on whether issue meets threshold
-
-        """
-        rank = constants.RANKING
-        return rank.index(self.severity) >= rank.index(severity) and rank.index(
-            self.confidence
-        ) >= rank.index(confidence)
-
     def _get_code_line(self, fname, line):
         """Return the given line from the file. Handles any utf8 error from tokenize
 
@@ -220,6 +198,7 @@ class Issue(object):
             "cwe_category": self.cwe_category,
             "owasp_category": self.owasp_category,
             "tags": self.tags,
+            "line_hash": self.line_hash,
         }
 
         if with_code:
@@ -249,7 +228,7 @@ class Issue(object):
         return severity
 
     def find_severity(self, data):
-        severity = constants.SEVERITY_DEFAULT
+        severity = "LOW"
         if "confidence" in data:
             severity = data["confidence"].upper()
         if "issue_severity" in data or "priority" in data:

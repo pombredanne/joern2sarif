@@ -9,7 +9,7 @@ setuptools.setup(
     author="Prabhu Subramanian",
     author_email="prabhu@shiftleft.io",
     description="Utility script to convert joern/ocular json output to sarif.",
-    entry_points={"console_scripts": ["scan=joern2sarif.cli:main"]},
+    entry_points={"console_scripts": ["joern2sarif=joern2sarif.cli:main"]},
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/joernio/joern2sarif",

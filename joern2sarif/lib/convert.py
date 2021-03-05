@@ -11,11 +11,52 @@ from urllib.parse import quote_plus
 import sarif_om as om
 from jschema_to_python.to_json import to_json
 
+import joern2sarif.lib.config as config
 from joern2sarif.lib.issue import issue_from_dict
 from joern2sarif.lib.logger import LOG
-import joern2sarif.lib.config as config
 
 TS_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
+
+
+def convert_dataflow(working_dir, tool_args, dataflows):
+    """
+    Convert dataflow into a simpler source and sink format for better representation in SARIF based viewers
+
+    :param working_dir: Work directory
+    :param tool_args: Tool args
+    :param dataflows: List of dataflows from Inspect
+    :return List of filename and location
+    """
+    if not dataflows:
+        return None
+    file_name_prefix = ""
+    location_list = []
+    for flow in dataflows:
+        fn = flow["location"].get("fileName")
+        if not fn or fn == "N/A":
+            continue
+        if not is_generic_package(fn):
+            location = flow["location"]
+            fileName = location.get("fileName")
+            if not file_name_prefix:
+                file_name_prefix = find_path_prefix(working_dir, fileName)
+            location_list.append(
+                {
+                    "filename": os.path.join(file_name_prefix, fileName),
+                    "line_number": location.get("lineNumber"),
+                }
+            )
+    if len(location_list) >= 2:
+        first = location_list[0]
+        last = location_list[-1]
+        if (
+            first["filename"] == last["filename"]
+            and first["line_number"] == last["line_number"]
+        ):
+            location_list = [first]
+        else:
+            location_list = [first, last]
+    return location_list
 
 
 def extract_from_file(
@@ -106,8 +147,10 @@ def extract_from_file(
                         {
                             "rule_id": kvdict["name"],
                             "title": kvdict["VulnerabilityDescription"],
-                            "short_description": kvdict["TitleTemplate"],
-                            "description": kvdict["DescriptionTemplate"],
+                            "short_description": kvdict["VulnerabilityDescription"],
+                            "description": kvdict["TitleTemplate"]
+                            + "\n\n"
+                            + kvdict["DescriptionTemplate"],
                             "issue_severity": kvdict["Score"],
                             "line_number": sink.get("line_number")
                             if sink
@@ -171,12 +214,12 @@ def convert_file(
         tool_name, tool_args, working_dir, report_file, file_path_list
     )
     return report(
-        tool_name,
-        tool_args,
-        working_dir,
-        issues,
-        converted_file,
-        file_path_list,
+        tool_name=tool_name,
+        tool_args=tool_args,
+        working_dir=working_dir,
+        issues=issues,
+        crep_fname=converted_file,
+        file_path_list=file_path_list,
     )
 
 
@@ -228,7 +271,10 @@ def report(
                 ),
                 tool=om.Tool(
                     driver=om.ToolComponent(
-                        name=driver_name, full_name=driver_name, version="1.0.0"
+                        name=driver_name,
+                        information_uri="https://joern.io",
+                        full_name=driver_name,
+                        version="1.0.0",
                     )
                 ),
                 invocations=[
@@ -251,26 +297,13 @@ def report(
             )
         ],
     )
-
     run = log.runs[0]
     invocation = run.invocations[0]
-
     add_results(tool_name, issues, run, file_path_list, working_dir)
-
     serialized_log = to_json(log)
-
     if crep_fname:
-        html_file = crep_fname.replace(".sarif", ".html")
         with io.open(crep_fname, "w") as fileobj:
             fileobj.write(serialized_log)
-        if tool_name != "empty-scan":
-            render_html(json.loads(serialized_log), html_file)
-            if fileobj.name != sys.stdout.name:
-                LOG.debug(
-                    "SARIF and HTML report written to file: %s, %s :thumbsup:",
-                    fileobj.name,
-                    html_file,
-                )
     return serialized_log
 
 
@@ -340,12 +373,9 @@ def create_result(tool_name, issue, rules, rule_indices, file_path_list, working
     add_region_and_context_region(
         physical_location, issue_dict["line_number"], issue_dict["code"]
     )
-    issue_severity = issue_dict["severity"]
+    issue_severity = issue_dict["issue_severity"]
     fingerprint = {"evidenceFingerprint": issue_dict["line_hash"]}
 
-    # Should we suppress this fingerprint?
-    if should_suppress_fingerprint(fingerprint, working_dir):
-        return None
     return om.Result(
         rule_id=rule.id,
         rule_index=rule_index,
@@ -507,10 +537,6 @@ def get_help(format, tool_name, rule_id, test_name, issue_dict):
 def get_url(tool_name, rule_id, test_name, issue_dict):
     if issue_dict.get("test_ref_url"):
         return issue_dict.get("test_ref_url")
-    if config.tool_ref_url.get(tool_name):
-        return config.tool_ref_url.get(tool_name) % dict(
-            rule_id=rule_id, tool_name=tool_name, test_name=test_name
-        )
     rule_id = quote_plus(rule_id)
     if rule_id and rule_id.startswith("CWE"):
         return "https://cwe.mitre.org/data/definitions/%s.html" % rule_id.replace(
@@ -538,10 +564,11 @@ def create_or_find_rule(tool_name, issue_dict, rules, rule_indices):
     rule_name = issue_dict["test_name"]
     if rule_id == rule_name:
         rule_name = rule_name.lower().replace("_", " ").capitalize()
+    rule_name = rule_name.replace(" ", "")
     if rule_id in rules:
         return rules[rule_id], rule_indices[rule_id]
     precision = "very-high"
-    issue_severity = issue_dict["severity"]
+    issue_severity = issue_dict["issue_severity"]
     rule = om.ReportingDescriptor(
         id=rule_id,
         name=rule_name,
