@@ -12,11 +12,12 @@ from jschema_to_python.to_json import to_json
 
 import joern2sarif.lib.config as config
 from joern2sarif.lib.issue import issue_from_dict
+from joern2sarif.lib.logger import LOG
 
 TS_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 
 
-def convert_dataflow(dataflows):
+def convert_dataflow(working_dir, dataflows):
     """
     Convert dataflow into a simpler source and sink format for better representation in SARIF based viewers
 
@@ -32,7 +33,7 @@ def convert_dataflow(dataflows):
             continue
         loc_list.append(
             {
-                "filename": location.get("file_name"),
+                "filename": os.path.join(working_dir, location.get("file_name")),
                 "line_number": location.get("line_number"),
             }
         )
@@ -61,8 +62,9 @@ def extract_from_file(
     with io.open(report_file, "r") as rfile:
         if extn == ".json":
             try:
-                report_data = json.loads(rfile.read())
-            except json.decoder.JSONDecodeError:
+                report_data = json.load(rfile)
+            except json.decoder.JSONDecodeError as je:
+                LOG.error(je)
                 return issues
             # Joern
             if tool_name in ["joern", "ocular"]:
@@ -88,7 +90,10 @@ def extract_from_file(
                             and source_obj.get("method", {}).get("filename")
                         ):
                             source = {
-                                "filename": source_obj.get("method").get("filename"),
+                                "filename": os.path.join(
+                                    working_dir,
+                                    source_obj.get("method").get("filename"),
+                                ),
                                 "line_number": source_obj.get("method").get(
                                     "lineNumber"
                                 ),
@@ -100,7 +105,10 @@ def extract_from_file(
                                 "method", {}
                             ).get("filename"):
                                 sink = {
-                                    "filename": sink_obj.get("method").get("filename"),
+                                    "filename": os.path.join(
+                                        working_dir,
+                                        sink_obj.get("method").get("filename"),
+                                    ),
                                     "line_number": sink_obj.get("method").get(
                                         "lineNumber"
                                     ),
@@ -110,8 +118,9 @@ def extract_from_file(
                                 "callingMethod", {}
                             ).get("filename"):
                                 sink = {
-                                    "filename": sink_obj.get("callingMethod").get(
-                                        "filename"
+                                    "filename": os.path.join(
+                                        working_dir,
+                                        sink_obj.get("callingMethod").get("filename"),
                                     ),
                                     "line_number": sink_obj.get("callingMethod").get(
                                         "lineNumber"
@@ -163,13 +172,13 @@ def extract_from_file(
                             last_loc = file_locations[-1]
                             loc_arr = last_loc.split(":")
                             location = {
-                                "filename": loc_arr[0],
+                                "filename": os.path.join(working_dir, loc_arr[0]),
                                 "line_number": loc_arr[1],
                             }
                         if not location and details.get("dataflow"):
                             dataflows = details.get("dataflow").get("list")
                             if dataflows:
-                                location_list = convert_dataflow(dataflows)
+                                location_list = convert_dataflow(working_dir, dataflows)
                                 # Take the sink
                                 if location_list:
                                     location = location_list[-1]
@@ -228,7 +237,7 @@ def convert_file(
 def report(
     tool_name="joern",
     tool_args=["--script", "oc_scripts/scan.sc"],
-    working_dir=os.getcwd(),
+    working_dir="",
     issues=None,
     crep_fname="joern-report.sarif",
     file_path_list=None,

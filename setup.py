@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="joern2sarif",
-    version="1.0.3",
+    version="1.0.4",
     author="Prabhu Subramanian",
     author_email="prabhu@shiftleft.io",
     description="Utility script to convert joern/ocular json output to sarif.",
@@ -15,7 +15,7 @@ setuptools.setup(
     url="https://github.com/joernio/joern2sarif",
     packages=["joern2sarif", "joern2sarif.lib"],
     include_package_data=True,
-    install_requires=["sarif-om", "jschema_to_python", "rich", "six"],
+    install_requires=["sarif-om", "jschema_to_python", "six"],
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Developers",

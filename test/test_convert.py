@@ -20,7 +20,7 @@ def test_issues():
     issues = convertLib.extract_from_file(
         "joern",
         [],
-        Path(__file__).parent,
+        "",
         Path(__file__).parent / "data" / "sample-findings.json",
     )
     return issues
@@ -30,7 +30,7 @@ def test_joern_extract_issue():
     issues = convertLib.extract_from_file(
         "joern",
         [],
-        Path(__file__).parent,
+        "",
         Path(__file__).parent / "data" / "sample-findings.json",
     )
     assert issues
@@ -52,7 +52,7 @@ def test_ngsast_extract_issue():
     issues = convertLib.extract_from_file(
         "ng-sast",
         [],
-        Path(__file__).parent,
+        "",
         Path(__file__).parent / "data" / "ngsast-report.json",
     )
     assert issues
