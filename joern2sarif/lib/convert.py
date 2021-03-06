@@ -275,7 +275,12 @@ def report(
     # working directory to use in the log
     WORKSPACE_PREFIX = os.getenv("WORKSPACE", None)
     wd_dir_log = WORKSPACE_PREFIX if WORKSPACE_PREFIX is not None else working_dir
-    driver_name = config.driver_name
+    driver_name = config.default_driver_name
+    information_uri = "https://joern.io"
+    # Customize driver name
+    if config.tool_drivers.get(tool_name):
+        driver_name = config.tool_drivers.get(tool_name)
+        information_uri = "https://shiftleft.io"
     # Construct SARIF log
     log = om.SarifLog(
         schema_uri="https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
@@ -294,7 +299,7 @@ def report(
                 tool=om.Tool(
                     driver=om.ToolComponent(
                         name=driver_name,
-                        information_uri="https://joern.io",
+                        information_uri=information_uri,
                         full_name=driver_name,
                         version="1.0.0",
                     )
