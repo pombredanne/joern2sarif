@@ -152,7 +152,17 @@ def extract_from_file(
                     )
             # NG SAST (Formerly Inspect) uses vulnerabilities
             elif tool_name == "ng-sast":
-                for k, v in report_data.items():
+                data_to_use = report_data
+                # Is this raw json
+                if report_data.get("ok"):
+                    response = report_data.get("response")
+                    if response:
+                        data_to_use = {
+                            response.get("scan", {}).get("app"): response.get(
+                                "findings"
+                            )
+                        }
+                for k, v in data_to_use.items():
                     if not v:
                         continue
                     for vuln in v:

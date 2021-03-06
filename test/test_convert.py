@@ -71,6 +71,29 @@ def test_ngsast_extract_issue():
     }
 
 
+def test_ngsast_raw_extract_issue():
+    issues = convertLib.extract_from_file(
+        "ng-sast",
+        [],
+        "",
+        Path(__file__).parent / "data" / "ngsast-raw-findings.json",
+    )
+    assert issues
+    assert len(issues) == 125
+    assert issues[0] == {
+        "rule_id": "deserialization-attacker-controlled",
+        "title": "Deserialization",
+        "description": "Deserialization: Deserialization of attacker-controlled data via `auth` in `AdminController.doPostLogin`\n\nAttacker controlled data is deserialized in this flow. An attacker may be able to trick the system into using malicious, potentially harmful data. As a result the attacker may be able to attack the integrity of the system or remotely execute code on the system.\n\n\n## Countermeasures\n\nThis vulnerability can be prevented by validating data before it is deserialized.\n\n## Additional information\n\n**[CWE-502](https://cwe.mitre.org/data/definitions/502.html)**\n\n**[OWASP-A8](https://owasp.org/www-project-top-ten/OWASP_Top_Ten_2017/Top_10-2017_A8-Insecure_Deserialization)**",
+        "score": 8,
+        "severity": "critical",
+        "line_number": "36",
+        "filename": "io/shiftleft/controller/AdminController.java",
+        "first_found": "24bf601a09f46716f6bb2b355165ba4aab8b2598",
+        "issue_confidence": "HIGH",
+        "fingerprint": "d1335303046c0cb2ec343aeba9923a03",
+    }
+
+
 def test_sample_convert(test_issues):
     data = convertLib.report(issues=test_issues)
     jsondata = json.loads(data)
