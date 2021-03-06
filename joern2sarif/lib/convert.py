@@ -197,6 +197,7 @@ def extract_from_file(
                                 {
                                     "rule_id": rule_id,
                                     "title": vuln["category"],
+                                    "short_description": vuln["category"],
                                     "description": vuln["title"]
                                     + "\n\n"
                                     + vuln["description"],

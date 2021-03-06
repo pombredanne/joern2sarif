@@ -60,6 +60,7 @@ def test_ngsast_extract_issue():
     assert issues[0] == {
         "rule_id": "command-injection-http",
         "title": "Remote Code Execution",
+        "short_description": "Remote Code Execution",
         "description": "Remote Code Execution: Command Injection through HTTP via `req` in `anonymous1`\n\nHTTP data is used in a shell command without undergoing escaping or validation. This could allow an attacker to execute code on the server. Injection flaws occur when untrusted data is sent to an interpreter as part of a command or query. By injecting hostile data, an attacker may trick the interpreter into executing unintended commands or accessing data without authorization which can result in data loss, corruption, or disclosure to unauthorized parties, loss of accountability, denial of access or even a complete host takeover.\n\n\n## Countermeasures\n\nThis vulnerability can be prevented by using parameterized queries or by validating HTTP data (preferably on server-side by means of common input sanitation libraries or whitelisting) before using it.\n\n## Additional information\n\n**[CWE-77](https://cwe.mitre.org/data/definitions/77.html)**\n\n**[CWE-78](https://cwe.mitre.org/data/definitions/78.html)**\n\n**[CWE-917](https://cwe.mitre.org/data/definitions/917.html)**\n\n**[OWASP-A1](https://owasp.org/www-project-top-ten/OWASP_Top_Ten_2017/Top_10-2017_A1-Injection)**",
         "score": 9,
         "severity": "critical",
@@ -83,6 +84,7 @@ def test_ngsast_raw_extract_issue():
     assert issues[0] == {
         "rule_id": "deserialization-attacker-controlled",
         "title": "Deserialization",
+        "short_description": "Deserialization",
         "description": "Deserialization: Deserialization of attacker-controlled data via `auth` in `AdminController.doPostLogin`\n\nAttacker controlled data is deserialized in this flow. An attacker may be able to trick the system into using malicious, potentially harmful data. As a result the attacker may be able to attack the integrity of the system or remotely execute code on the system.\n\n\n## Countermeasures\n\nThis vulnerability can be prevented by validating data before it is deserialized.\n\n## Additional information\n\n**[CWE-502](https://cwe.mitre.org/data/definitions/502.html)**\n\n**[OWASP-A8](https://owasp.org/www-project-top-ten/OWASP_Top_Ten_2017/Top_10-2017_A8-Insecure_Deserialization)**",
         "score": 8,
         "severity": "critical",
