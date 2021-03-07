@@ -134,11 +134,9 @@ def extract_from_file(
                     issues.append(
                         {
                             "rule_id": kvdict["name"],
-                            "title": kvdict["VulnerabilityDescription"],
+                            "title": kvdict["TitleTemplate"],
                             "short_description": kvdict["VulnerabilityDescription"],
-                            "description": kvdict["TitleTemplate"]
-                            + "\n\n"
-                            + kvdict["DescriptionTemplate"],
+                            "description": kvdict["DescriptionTemplate"],
                             "issue_severity": kvdict["Score"],
                             "line_number": sink.get("line_number")
                             if sink
@@ -196,11 +194,9 @@ def extract_from_file(
                             issues.append(
                                 {
                                     "rule_id": rule_id,
-                                    "title": vuln["category"],
+                                    "title": vuln["title"],
                                     "short_description": vuln["category"],
-                                    "description": vuln["title"]
-                                    + "\n\n"
-                                    + vuln["description"],
+                                    "description": vuln["description"],
                                     "score": score,
                                     "severity": vuln["severity"],
                                     "line_number": location.get("line_number"),
@@ -528,8 +524,6 @@ def get_rule_full_description(tool_name, rule_id, test_name, issue_dict):
     :param issue_dict:
     :return:
     """
-    if issue_dict.get("description"):
-        return issue_dict.get("description")
     issue_text = issue_dict.get("issue_text", "")
     # Extract just the first line alone
     if issue_text:
@@ -566,7 +560,7 @@ def get_url(tool_name, rule_id, test_name, issue_dict):
         return "https://cwe.mitre.org/data/definitions/%s.html" % issue_dict.get(
             "cwe_category"
         ).replace("CWE-", "")
-    return "https://joern.io?q={}".format(rule_id)
+    return "https://docs.shiftleft.io/ngsast/product-info/coverage#vulnerabilities"
 
 
 def create_or_find_rule(tool_name, issue_dict, rules, rule_indices):

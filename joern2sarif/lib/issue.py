@@ -288,8 +288,6 @@ class Issue(object):
             self.confidence = data["confidence"].upper()
         if "issue_text" in data:
             self.text = data["issue_text"]
-        if "title" in data:
-            self.text = data["title"]
         if "description" in data:
             self.text = data["description"]
         if "short_description" in data:
