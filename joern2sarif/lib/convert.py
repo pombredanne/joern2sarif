@@ -612,7 +612,7 @@ def create_or_find_rule(tool_name, issue_dict, rules, rule_indices):
         },
         help_uri=get_url(tool_name, rule_id, issue_dict["test_name"], issue_dict),
         properties={
-            "tags": ["joern"],
+            "tags": [tool_name],
             "precision": precision,
         },
         default_configuration={"level": level_from_severity(issue_severity)},
