@@ -378,26 +378,13 @@ def add_results(tool_name, issues, run, file_path_list=None, working_dir=None):
         run.tool.driver.rules = list(rules.values())
 
 
-def create_result(tool_name, issue, rules, rule_indices, file_path_list, working_dir):
-    """Method to convert a single issue into result schema with rules
+def fix_filename(working_dir, filename):
+    """Method to prefix filename based on workspace
 
-    :param tool_name: tool name
-    :param issue: Issues object
-    :param rules: List of rules
-    :param rule_indices: Indices of referred rules
-    :param file_path_list: Full file path for any manipulation
     :param working_dir: Working directory
+    :param filename: File name to fix
     """
     WORKSPACE_PREFIX = os.getenv("WORKSPACE", None)
-    if isinstance(issue, dict):
-        issue = issue_from_dict(issue)
-
-    issue_dict = issue.as_dict()
-    rule, rule_index = create_or_find_rule(tool_name, issue_dict, rules, rule_indices)
-
-    # Substitute workspace prefix
-    # Override file path prefix with workspace
-    filename = issue_dict["filename"]
     if working_dir:
         # Convert to full path only if the user wants
         if WORKSPACE_PREFIX is None and not filename.startswith(working_dir):
@@ -410,6 +397,28 @@ def create_result(tool_name, issue, rules, rule_indices, file_path_list, working
                 filename = os.path.join(WORKSPACE_PREFIX, filename)
             else:
                 filename = re.sub(r"^" + working_dir, WORKSPACE_PREFIX, filename)
+    return filename
+
+
+def create_result(tool_name, issue, rules, rule_indices, file_path_list, working_dir):
+    """Method to convert a single issue into result schema with rules
+
+    :param tool_name: tool name
+    :param issue: Issues object
+    :param rules: List of rules
+    :param rule_indices: Indices of referred rules
+    :param file_path_list: Full file path for any manipulation
+    :param working_dir: Working directory
+    """
+    if isinstance(issue, dict):
+        issue = issue_from_dict(issue)
+
+    issue_dict = issue.as_dict()
+    rule, rule_index = create_or_find_rule(tool_name, issue_dict, rules, rule_indices)
+
+    # Substitute workspace prefix
+    # Override file path prefix with workspace
+    filename = fix_filename(working_dir, issue_dict["filename"])
     physical_location = om.PhysicalLocation(
         artifact_location=om.ArtifactLocation(uri=to_uri(filename))
     )
@@ -425,7 +434,9 @@ def create_result(tool_name, issue, rules, rule_indices, file_path_list, working
         for cf in issue_dict.get("codeflows"):
             if cf.get("filename") and cf.get("line_number"):
                 thread_physical_location = om.PhysicalLocation(
-                    artifact_location=om.ArtifactLocation(uri=to_uri(cf["filename"])),
+                    artifact_location=om.ArtifactLocation(
+                        uri=to_uri(fix_filename(working_dir, cf["filename"]))
+                    ),
                     region=om.Region(
                         start_line=int(cf["line_number"]),
                         snippet=om.ArtifactContent(text=""),
