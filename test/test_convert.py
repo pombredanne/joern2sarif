@@ -45,6 +45,13 @@ def test_joern_extract_issue():
         "filename": "vulnerabilities/sensitive.js",
         "issue_confidence": "HIGH",
         "fingerprint": "0faab86059cec4d8e185382166a9f583",
+        "codeflows": [
+            {
+                "filename": "vulnerabilities/sensitive.js",
+                "line_number": 6,
+                "fullName": "vulnerabilities/sensitive.js::program:anonymous",
+            }
+        ],
     }
 
 
@@ -69,6 +76,10 @@ def test_ngsast_extract_issue():
         "first_found": "1545c906d065bb4eb4c863be85d318e0b8cb509d",
         "issue_confidence": "HIGH",
         "fingerprint": "3fdf32776d26f1c3d469859fd6a46600",
+        "codeflows": [
+            {"filename": "vulnerabilities/exec.js", "line_number": "17"},
+            {"filename": "vulnerabilities/exec.js", "line_number": "19"},
+        ],
     }
 
 
@@ -93,6 +104,32 @@ def test_ngsast_raw_extract_issue():
         "first_found": "24bf601a09f46716f6bb2b355165ba4aab8b2598",
         "issue_confidence": "HIGH",
         "fingerprint": "d1335303046c0cb2ec343aeba9923a03",
+        "codeflows": [
+            {
+                "filename": "io/shiftleft/controller/AdminController.java",
+                "line_number": "85",
+            },
+            {
+                "filename": "io/shiftleft/controller/AdminController.java",
+                "line_number": "91",
+            },
+            {
+                "filename": "io/shiftleft/controller/AdminController.java",
+                "line_number": "33",
+            },
+            {
+                "filename": "io/shiftleft/controller/AdminController.java",
+                "line_number": "34",
+            },
+            {
+                "filename": "io/shiftleft/controller/AdminController.java",
+                "line_number": "35",
+            },
+            {
+                "filename": "io/shiftleft/controller/AdminController.java",
+                "line_number": "36",
+            },
+        ],
     }
 
 
