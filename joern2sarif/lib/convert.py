@@ -73,6 +73,8 @@ def extract_from_file(
                         continue
                     keyValuePairs = v.get("keyValuePairs")
                     kvdict = {}
+                    codeflows = []
+                    file_locations = {}
                     for kv in keyValuePairs:
                         if kv.get("_label") == "KEY_VALUE_PAIR":
                             kvdict[kv["key"]] = kv["value"]
@@ -99,6 +101,10 @@ def extract_from_file(
                                 ),
                                 "fullName": source_obj.get("method").get("fullName"),
                             }
+                            key = f"""{source["filename"]}:{source["line_number"]}"""
+                            if not file_locations.get(key):
+                                codeflows.append(source)
+                                file_locations[key] = 1
                         sink_obj = ev.get("sink")
                         if sink_obj:
                             if sink_obj.get("method") and sink_obj.get(
@@ -129,6 +135,10 @@ def extract_from_file(
                                         "fullName"
                                     ),
                                 }
+                            key = f"""{sink["filename"]}:{sink["line_number"]}"""
+                            if sink and not file_locations.get(key):
+                                codeflows.append(sink)
+                                file_locations[key] = 1
                         if fingerprint and (source or sink):
                             break
                     issues.append(
@@ -146,6 +156,7 @@ def extract_from_file(
                             else source.get("filename"),
                             "issue_confidence": "HIGH",
                             "fingerprint": fingerprint,
+                            "codeflows": codeflows,
                         }
                     )
             # NG SAST (Formerly Inspect) uses vulnerabilities
@@ -165,6 +176,7 @@ def extract_from_file(
                         continue
                     for vuln in v:
                         location = {}
+                        codeflows = []
                         details = vuln.get("details", {})
                         file_locations = details.get("file_locations", [])
                         tags = vuln.get("tags", [])
@@ -177,18 +189,24 @@ def extract_from_file(
                         if cvss_tag:
                             score = cvss_tag[0].get("value")
                         if file_locations:
-                            last_loc = file_locations[-1]
-                            loc_arr = last_loc.split(":")
-                            location = {
-                                "filename": os.path.join(working_dir, loc_arr[0]),
-                                "line_number": loc_arr[1],
-                            }
+                            for floc in file_locations:
+                                flocArr = floc.split(":")
+                                codeflows.append(
+                                    {
+                                        "filename": os.path.join(
+                                            working_dir, flocArr[0]
+                                        ),
+                                        "line_number": flocArr[1],
+                                    }
+                                )
+                            location = codeflows[-1]
                         if not location and details.get("dataflow"):
                             dataflows = details.get("dataflow").get("list")
                             if dataflows:
                                 location_list = convert_dataflow(working_dir, dataflows)
                                 # Take the sink
                                 if location_list:
+                                    codeflows = location_list
                                     location = location_list[-1]
                         if location:
                             issues.append(
@@ -204,6 +222,7 @@ def extract_from_file(
                                     "first_found": vuln["version_first_seen"],
                                     "issue_confidence": "HIGH",
                                     "fingerprint": fingerprint,
+                                    "codeflows": codeflows,
                                 }
                             )
     return issues
@@ -346,7 +365,12 @@ def add_results(tool_name, issues, run, file_path_list=None, working_dir=None):
 
     for issue in issues:
         result = create_result(
-            tool_name, issue, rules, rule_indices, file_path_list, working_dir
+            tool_name,
+            issue,
+            rules,
+            rule_indices,
+            file_path_list,
+            working_dir,
         )
         if result:
             run.results.append(result)
@@ -393,15 +417,29 @@ def create_result(tool_name, issue, rules, rule_indices, file_path_list, working
     add_region_and_context_region(
         physical_location, issue_dict["line_number"], issue_dict["code"]
     )
+    thread_flows_list = []
     issue_severity = issue_dict["issue_severity"]
     fingerprint = {"evidenceFingerprint": issue_dict["line_hash"]}
-
+    if issue_dict.get("codeflows"):
+        thread_locations = []
+        for cf in issue_dict.get("codeflows"):
+            thread_physical_location = om.PhysicalLocation(
+                artifact_location=om.ArtifactLocation(uri=to_uri(cf["filename"])),
+                region=om.Region(
+                    start_line=int(cf["line_number"]),
+                    snippet=om.ArtifactContent(text=""),
+                ),
+            )
+            thread_locations.append(
+                {"location": om.Location(physical_location=thread_physical_location)}
+            )
+        thread_flows_list.append(om.ThreadFlow(locations=thread_locations))
     return om.Result(
         rule_id=rule.id,
         rule_index=rule_index,
         message=om.Message(
-            text=issue_dict["issue_text"],
-            markdown=issue_dict["issue_text"],
+            text=issue_dict["title"],
+            markdown=issue_dict["title"],
         ),
         level=level_from_severity(issue_severity),
         locations=[om.Location(physical_location=physical_location)],
@@ -412,6 +450,7 @@ def create_result(tool_name, issue, rules, rule_indices, file_path_list, working
             "issue_tags": issue_dict.get("tags", {}),
         },
         baseline_state="unchanged" if issue_dict["first_found"] else "new",
+        code_flows=[om.CodeFlow(thread_flows=thread_flows_list)],
     )
 
 
@@ -459,12 +498,12 @@ def add_region_and_context_region(physical_location, line_number, code):
     physical_location.region = om.Region(
         start_line=line_number, snippet=om.ArtifactContent(text=snippet_line)
     )
-
-    physical_location.context_region = om.Region(
-        start_line=first_line_number,
-        end_line=end_line_number,
-        snippet=om.ArtifactContent(text="".join(snippet_lines)),
-    )
+    if snippet_lines:
+        physical_location.context_region = om.Region(
+            start_line=first_line_number,
+            end_line=end_line_number,
+            snippet=om.ArtifactContent(text="".join(snippet_lines)),
+        )
 
 
 def parse_code(code):

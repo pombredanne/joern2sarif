@@ -54,6 +54,7 @@ class Issue(object):
         self.line_hash = ""
         self.first_found = None
         self.tags = {}
+        self.codeflows = []
 
     def __str__(self):
         return ("Issue: '%s' from %s:%s: Severity: %s Confidence: " "%s at %s:%i") % (
@@ -186,6 +187,7 @@ class Issue(object):
         out = {
             "filename": self.fname,
             "test_name": self.test,
+            "title": self.title,
             "test_id": str(self.test_id),
             "test_ref_url": self.test_ref_url,
             "issue_severity": self.severity,
@@ -199,6 +201,7 @@ class Issue(object):
             "owasp_category": self.owasp_category,
             "tags": self.tags,
             "line_hash": self.line_hash,
+            "codeflows": self.codeflows,
         }
 
         if with_code:
@@ -297,7 +300,8 @@ class Issue(object):
         if "owasp_category" in data:
             self.owasp_category = data["owasp_category"]
         if "title" in data:
-            self.test = data["title"]
+            self.test = data["title"].split(":")[0]
+            self.title = data["title"]
         self.test_id = self.get_test_id(data)
         if "link" in data:
             self.test_ref_url = data["link"]
@@ -310,6 +314,8 @@ class Issue(object):
             self.tags = data["tags"]
         if "fingerprint" in data:
             self.line_hash = data["fingerprint"]
+        if "codeflows" in data:
+            self.codeflows = data["codeflows"]
 
 
 def issue_from_dict(data):
