@@ -423,16 +423,21 @@ def create_result(tool_name, issue, rules, rule_indices, file_path_list, working
     if issue_dict.get("codeflows"):
         thread_locations = []
         for cf in issue_dict.get("codeflows"):
-            thread_physical_location = om.PhysicalLocation(
-                artifact_location=om.ArtifactLocation(uri=to_uri(cf["filename"])),
-                region=om.Region(
-                    start_line=int(cf["line_number"]),
-                    snippet=om.ArtifactContent(text=""),
-                ),
-            )
-            thread_locations.append(
-                {"location": om.Location(physical_location=thread_physical_location)}
-            )
+            if cf.get("filename") and cf.get("line_number"):
+                thread_physical_location = om.PhysicalLocation(
+                    artifact_location=om.ArtifactLocation(uri=to_uri(cf["filename"])),
+                    region=om.Region(
+                        start_line=int(cf["line_number"]),
+                        snippet=om.ArtifactContent(text=""),
+                    ),
+                )
+                thread_locations.append(
+                    {
+                        "location": om.Location(
+                            physical_location=thread_physical_location
+                        )
+                    }
+                )
         thread_flows_list.append(om.ThreadFlow(locations=thread_locations))
     return om.Result(
         rule_id=rule.id,
