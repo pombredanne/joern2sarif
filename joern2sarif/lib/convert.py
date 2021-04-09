@@ -439,7 +439,7 @@ def create_result(tool_name, issue, rules, rule_indices, file_path_list, working
                     }
                 )
         thread_flows_list.append(om.ThreadFlow(locations=thread_locations))
-    return om.Result(
+    result = om.Result(
         rule_id=rule.id,
         rule_index=rule_index,
         message=om.Message(
@@ -455,8 +455,11 @@ def create_result(tool_name, issue, rules, rule_indices, file_path_list, working
             "issue_tags": issue_dict.get("tags", {}),
         },
         baseline_state="unchanged" if issue_dict["first_found"] else "new",
-        code_flows=[om.CodeFlow(thread_flows=thread_flows_list)],
     )
+    # Add thread flows if available
+    if thread_flows_list:
+        result.code_flows = [om.CodeFlow(thread_flows=thread_flows_list)]
+    return result
 
 
 def level_from_severity(severity):
