@@ -656,7 +656,7 @@ def create_result(tool_name, issue, rules, rule_indices, file_path_list, working
         rule_id=rule.id,
         rule_index=rule_index,
         message=om.Message(
-            text=issue_dict["title"],
+            text=issue_dict["title"].replace("`", ""),
             markdown=issue_dict["title"],
         ),
         level=level_from_severity(issue_severity),
@@ -805,6 +805,8 @@ def get_help(format, tool_name, rule_id, test_name, issue_dict):
     :return: Help text
     """
     issue_text = issue_dict.get("issue_text", "")
+    if format == "text":
+        issue_text = issue_text.replace("`", "")
     return issue_text
 
 
