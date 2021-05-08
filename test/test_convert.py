@@ -133,6 +133,31 @@ def test_ngsast_raw_extract_issue():
     }
 
 
+def test_ngsast_ext_extract_issue():
+    issues = convertLib.extract_from_file(
+        "ng-sast",
+        [],
+        "",
+        Path(__file__).parent / "data" / "ngsast-ext-findings.json",
+    )
+    assert issues
+    assert len(issues) == 72
+    assert issues[0] == {
+        "rule_id": "CKV_AWS_144",
+        "title": "Ensure that S3 bucket has cross-region replication enabled.",
+        "short_description": "S3BucketReplicationConfiguration",
+        "description": "Ensure that S3 bucket has cross-region replication enabled.\n\n## Documentation\n\n- [AWS Terraform](https://registry.terraform.io/providers/hashicorp/aws/latest/docs)\n- [Azure Terraform](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs)\n- [Google Cloud Terraform](https://registry.terraform.io/providers/hashicorp/google/latest/docs)",
+        "score": "",
+        "severity": "moderate",
+        "line_number": 69,
+        "filename": "terraform/s3.tf",
+        "first_found": "",
+        "issue_confidence": "HIGH",
+        "fingerprint": "88944a8ffbd658dd8aa9068727d43880",
+        "codeflows": [{"filename": "terraform/s3.tf", "line_number": 69}],
+    }
+
+
 def test_sample_convert(test_issues):
     data = convertLib.report(issues=test_issues)
     jsondata = json.loads(data)

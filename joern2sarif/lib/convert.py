@@ -260,7 +260,7 @@ def extract_from_file(
                 LOG.error(je)
                 return issues
             # Joern
-            if tool_name in ["joern", "ocular"]:
+            if tool_name in ("joern", "ocular"):
                 for v in report_data:
                     if not v or not v.get("_label") == "FINDING":
                         continue
@@ -353,7 +353,7 @@ def extract_from_file(
                         }
                     )
             # NG SAST (Formerly Inspect) uses vulnerabilities
-            elif tool_name == "ng-sast":
+            elif tool_name in ("ng-sast", "core"):
                 data_to_use = report_data
                 # Is this raw json
                 if report_data.get("ok"):
@@ -370,6 +370,7 @@ def extract_from_file(
                     for vuln in v:
                         location = {}
                         codeflows = []
+                        vuln_type = vuln.get("type")
                         details = vuln.get("details", {})
                         file_locations = details.get("file_locations", [])
                         tags = vuln.get("tags", [])
@@ -381,7 +382,15 @@ def extract_from_file(
                         cvss_tag = [t for t in tags if t.get("key") == "cvss_score"]
                         if cvss_tag:
                             score = cvss_tag[0].get("value")
-                        if file_locations:
+                        if vuln_type == "extscan":
+                            location = {
+                                "filename": os.path.join(
+                                    working_dir, details.get("fileName")
+                                ),
+                                "line_number": details.get("lineNumber"),
+                            }
+                            codeflows.append(location)
+                        elif file_locations:
                             for floc in file_locations:
                                 flocArr = floc.split(":")
                                 codeflows.append(

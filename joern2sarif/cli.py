@@ -30,8 +30,8 @@ def build_args():
         "-t",
         "--tool",
         dest="tool_name",
-        choices=["joern", "ocular", "ng-sast"],
-        default="joern",
+        choices=["joern", "ocular", "ng-sast", "core"],
+        default="core",
         help="Tool name",
     )
     return parser.parse_args()
