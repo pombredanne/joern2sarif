@@ -5,6 +5,7 @@ import os
 import pathlib
 import re
 import uuid
+from string import capwords
 from urllib.parse import quote_plus, urlparse
 
 import sarif_om as om
@@ -848,10 +849,10 @@ def create_or_find_rule(tool_name, issue_dict, rules, rule_indices):
     rule_id = issue_dict["test_id"]
     rule_name = issue_dict["test_name"]
     if rule_id == rule_name:
-        rule_name = rule_name.lower().replace("_", " ").capitalize()
+        rule_name = rule_name.lower().replace("_", " ")
     if rule_id == rule_name.lower():
         rule_name = f"{rule_name} rule"
-    rule_name = rule_name.replace(" ", "")
+    rule_name = capwords(rule_name).replace(" ", "")
     if rule_id in rules:
         return rules[rule_id], rule_indices[rule_id]
     precision = "very-high"
